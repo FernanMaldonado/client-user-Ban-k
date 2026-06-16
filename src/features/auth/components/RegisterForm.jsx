@@ -99,9 +99,12 @@ const RegisterForm = ({ onSwitch }) => {
               </label>
               <input
                 type="tel"
-                placeholder="+502 4587 9625"
+                placeholder="45879625"
                 className={`w-full px-5 py-3 text-sm bg-slate-50 border ${errors.phone ? 'border-red-300 focus:ring-red-500/5' : 'border-slate-100 focus:ring-cyan-950/5'} rounded-[1.5rem] text-slate-800 font-semibold focus:outline-none focus:ring-4 focus:border-cyan-950 focus:bg-white transition-all placeholder:text-slate-300 shadow-inner`}
-                {...register("phone", { required: "El teléfono es obligatorio" })}
+                {...register("phone", { 
+                  required: "El teléfono es obligatorio",
+                  pattern: { value: /^[0-9]{8}$/, message: "Debe tener exactamente 8 dígitos numéricos" } 
+                })}
               />
               {errors.phone && <p className="text-[9px] text-red-500 font-bold ml-3">{errors.phone.message}</p>}
             </div>
@@ -153,6 +156,7 @@ const RegisterForm = ({ onSwitch }) => {
                 className={`w-full px-5 py-3 text-sm bg-slate-50 border ${errors.monthlyIncome ? 'border-red-300 focus:ring-red-500/5' : 'border-slate-100 focus:ring-cyan-950/5'} rounded-[1.5rem] text-slate-800 font-semibold focus:outline-none focus:ring-4 focus:border-cyan-950 focus:bg-white transition-all placeholder:text-slate-300 shadow-inner`}
                 {...register("monthlyIncome", { 
                   required: "La declaración de ingresos es obligatoria",
+                  valueAsNumber: true,
                   min: { value: 1, message: "El ingreso debe ser mayor a cero" }
                 })}
               />
