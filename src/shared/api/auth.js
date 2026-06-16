@@ -5,9 +5,7 @@ export const login = async (data) => {
 };
 
 export const register = async (data) => {
-    return await axiosAuth.post("/api/v1/auth/register", data, {
-        Headers: { "Content-Type": "multipart/form-data" }
-    });
+    return await axiosAuth.post("/api/v1/auth/register", data);
 };
 
 export const forgotPassword = async (email) => {
