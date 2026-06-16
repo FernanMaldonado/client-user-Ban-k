@@ -3,7 +3,8 @@ import { useAuthStore } from "../../features/auth/store/authStore.js";
 import { AuthPage } from "../../features/auth/pages/AuthPage.jsx";
 import { DashboardPage } from "../layout/DashboardPage.jsx";
 import { VerifyEmailPage } from "../../features/auth/pages/VerifyEmailPage.jsx";
-
+import { Cuentas } from "../../features/cuentas/components/Cuentas.jsx";
+import { Prestamos } from "../../features/prestamos/components/Prestamos.jsx";
 const DashboardIndex = () => (
     <div className="flex flex-col items-center justify-center h-full animate-in fade-in zoom-in duration-700">
         <div className="relative">
@@ -37,6 +38,9 @@ export const AppRoutes = () => {
             <Route path="/dashboard" element={
                 isAuthenticated ? <DashboardPage /> : <Navigate to="/" replace />
             }>
+                <Route index element={<DashboardIndex />} />
+                <Route path="cuentas" element={<Cuentas />} />
+                <Route path="prestamos" element={<Prestamos />} />
             </Route>
         </Routes>
     );
