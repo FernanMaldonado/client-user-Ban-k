@@ -56,7 +56,7 @@ export const PurchaseHistory = ({ isOpen, onClose, historyItems, onFilterChange 
             return (
               <li key={idx} className="p-4 bg-slate-900 rounded-xl border border-slate-800 animate-fadeIn">
                 <span className="block text-white font-bold">{h.nombre}</span>
-                <span className="text-emerald-400">-${h.precio}</span>
+                <span className="text-emerald-400">-Q{h.precio}</span>
                 {formattedDate && (
                   <span className="text-[10px] text-slate-500 block mt-1">{formattedDate}</span>
                 )}
