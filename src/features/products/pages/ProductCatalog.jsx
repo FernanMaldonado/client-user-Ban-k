@@ -10,22 +10,24 @@ import { useProducts } from '../hooks/useProducts';
 import { useShoppingCart } from '../hooks/useShoppingCart';
 import { usePurchaseHistory } from '../hooks/usePurchaseHistory';
 import { usePaymentCards } from '../hooks/usePaymentCards';
-import { updateProduct } from '../../../shared/api/admin';
+import { updateProduct, updateCuenta } from '../../../shared/api/admin';
 
 export const ProductCatalog = () => {
   const PRODUCTS_PER_PAGE = 6;
 
   // State management using custom hooks
-  const { products, loading } = useProducts();
+  const { products, loading, setProducts } = useProducts();
   const { cart, addToCart, removeFromCart, clearCart, getCartTotal } = useShoppingCart();
   const { history, addToHistory, filterByPeriod } = usePurchaseHistory();
   const {
     cards,
     selectedCardId,
     setSelectedCardId,
+    setCuentas,
     deductBalance,
     getSelectedCard,
-    getTotalBalance
+    loadingCards,
+    refreshCards,
   } = usePaymentCards();
 
   // UI State
@@ -37,16 +39,11 @@ export const ProductCatalog = () => {
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', actions: [] });
 
-  // Compute stock dynamically by subtracting cart quantities
-  const productsWithStock = products.map(p => {
-    const cartCount = cart.filter(item => item.id === p.id).length;
-    return {
-      ...p,
-      stock: Math.max(0, p.stock - cartCount)
-    };
-  });
+  // El stock ya se actualiza localmente en setProducts al añadir/quitar del carrito,
+  // y también se persiste en el backend. No restamos cart items aquí para evitar doble descuento.
+  const productsWithStock = products;
 
-  // Filter products based on search
+  // Filter products based on search (todos los productos, activos e inactivos)
   const filtered = productsWithStock.filter(p =>
     p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
     String(p.id) === searchQuery
@@ -71,31 +68,58 @@ export const ProductCatalog = () => {
 
   const handleAddToCart = (productId) => {
     const product = productsWithStock.find(p => p.id === productId);
-    if (!product || product.stock <= 0) return;
+    if (!product || product.stock <= 0 || product.isActive === false) return;
 
     setConfirmModal({
       show: true,
       title: '¿Estás seguro?',
-      message: '¿Quieres agregar este producto al carrito?',
+      message: `¿Quieres agregar "${product.nombre}" al carrito?`,
       actions: [
         {
           label: 'Cancelar',
-          onClick: () => setConfirmModal({ ...confirmModal, show: false }),
-          className: 'bg-slate-800 text-white'
+          onClick: () => setConfirmModal(prev => ({ ...prev, show: false })),
+          className: 'bg-slate-100 hover:bg-slate-200 text-slate-800'
         },
         {
           label: 'Añadir',
-          onClick: () => {
+          onClick: async () => {
+            // 1. Agregar al carrito local
             addToCart(product);
-            setConfirmModal({ ...confirmModal, show: false });
+
+            // 2. Reducir stock en la DB del admin INMEDIATAMENTE
+            const originalProduct = products.find(p => p.id === productId);
+            if (originalProduct) {
+              const newStock = Math.max(0, originalProduct.stock - 1);
+              try {
+                await updateProduct(originalProduct.id, {
+                  nombre: originalProduct.nombre,
+                  descripcion: originalProduct.desc,
+                  precio: originalProduct.precio,
+                  stock: newStock,
+                  isActive: originalProduct.isActive !== false,
+                });
+                // Actualizar el estado local de productos también para reflejar la baja
+                setProducts(prev =>
+                  prev.map(p =>
+                    p.id === productId ? { ...p, stock: newStock } : p
+                  )
+                );
+              } catch (err) {
+                console.error('Error actualizando stock en el servidor:', err);
+              }
+            }
+
+            setConfirmModal(prev => ({ ...prev, show: false }));
           },
-          className: 'bg-blue-600 text-white hover:bg-blue-500'
+          className: 'bg-cyan-800 text-white hover:bg-cyan-700'
         }
       ]
     });
   };
 
   const handleRemoveFromCart = (index) => {
+    const itemToRemove = cart[index];
+
     setConfirmModal({
       show: true,
       title: '¿Estás seguro?',
@@ -103,16 +127,43 @@ export const ProductCatalog = () => {
       actions: [
         {
           label: 'Cancelar',
-          onClick: () => setConfirmModal({ ...confirmModal, show: false }),
-          className: 'bg-slate-800 text-white'
+          onClick: () => setConfirmModal(prev => ({ ...prev, show: false })),
+          className: 'bg-slate-100 hover:bg-slate-200 text-slate-800'
         },
         {
           label: 'Eliminar',
-          onClick: () => {
+          onClick: async () => {
+            // 1. Quitar del carrito local
             removeFromCart(index);
-            setConfirmModal({ ...confirmModal, show: false });
+
+            // 2. Devolver stock en la DB del admin
+            if (itemToRemove) {
+              const originalProduct = products.find(p => p.id === itemToRemove.id);
+              if (originalProduct) {
+                const restoredStock = originalProduct.stock + 1;
+                try {
+                  await updateProduct(originalProduct.id, {
+                    nombre: originalProduct.nombre,
+                    descripcion: originalProduct.desc,
+                    precio: originalProduct.precio,
+                    stock: restoredStock,
+                    isActive: originalProduct.isActive !== false,
+                  });
+                  // Actualizar el estado local también
+                  setProducts(prev =>
+                    prev.map(p =>
+                      p.id === itemToRemove.id ? { ...p, stock: restoredStock } : p
+                    )
+                  );
+                } catch (err) {
+                  console.error('Error restaurando stock en el servidor:', err);
+                }
+              }
+            }
+
+            setConfirmModal(prev => ({ ...prev, show: false }));
           },
-          className: 'bg-red-600 text-white hover:bg-red-500'
+          className: 'bg-red-600 text-white hover:bg-red-700'
         }
       ]
     });
@@ -126,13 +177,13 @@ export const ProductCatalog = () => {
     if (!card) {
       setConfirmModal({
         show: true,
-        title: 'Error',
-        message: 'Por favor selecciona una tarjeta.',
+        title: 'Sin cuenta seleccionada',
+        message: 'Por favor selecciona una cuenta bancaria.',
         actions: [
           {
             label: 'Entendido',
-            onClick: () => setConfirmModal({ ...confirmModal, show: false }),
-            className: 'bg-slate-800 text-white'
+            onClick: () => setConfirmModal(prev => ({ ...prev, show: false })),
+            className: 'bg-slate-100 hover:bg-slate-200 text-slate-800'
           }
         ]
       });
@@ -143,11 +194,11 @@ export const ProductCatalog = () => {
       setConfirmModal({
         show: true,
         title: 'Saldo Insuficiente',
-        message: 'No tienes suficiente saldo en la tarjeta seleccionada.',
+        message: `Tu cuenta "${card.name}" tiene saldo Q${card.balance.toFixed(2)} y el total es Q${cartTotal.toFixed(2)}.`,
         actions: [
           {
             label: 'Entendido',
-            onClick: () => setConfirmModal({ ...confirmModal, show: false }),
+            onClick: () => setConfirmModal(prev => ({ ...prev, show: false })),
             className: 'bg-red-600 text-white'
           }
         ]
@@ -158,47 +209,48 @@ export const ProductCatalog = () => {
     setConfirmModal({
       show: true,
       title: 'Confirmar Compra',
-      message: `¿Deseas finalizar la compra por $${cartTotal}?`,
+      message: `¿Confirmas la compra de Q${cartTotal.toFixed(2)} con la cuenta "${card.name}"?`,
       actions: [
         {
           label: 'Cancelar',
-          onClick: () => setConfirmModal({ ...confirmModal, show: false }),
+          onClick: () => setConfirmModal(prev => ({ ...prev, show: false })),
           className: 'bg-slate-800 text-white'
         },
         {
           label: 'Comprar',
           onClick: async () => {
-            // Agrupar items del carrito para calcular la reducción de stock
-            const cartGroups = cart.reduce((acc, item) => {
-              acc[item.id] = (acc[item.id] || 0) + 1;
-              return acc;
-            }, {});
+            try {
+              // Descontar saldo de la cuenta bancaria real en el backend
+              const newBalance = Math.max(0, card.balance - cartTotal);
+              await updateCuenta(card.id, { saldo: newBalance });
 
-            // Actualizar stock en el servidor para cada producto comprado
-            for (const [itemId, quantityBought] of Object.entries(cartGroups)) {
-              const originalProduct = products.find(p => String(p.id) === itemId);
-              if (originalProduct) {
-                const newStock = Math.max(0, originalProduct.stock - quantityBought);
-                try {
-                  await updateProduct(originalProduct.id, {
-                    id: originalProduct.id,
-                    nombre: originalProduct.nombre,
-                    descripcion: originalProduct.desc, // descripcion en el backend admin
-                    precio: originalProduct.precio,
-                    stock: newStock,
-                    isActive: true
-                  });
-                } catch (err) {
-                  console.error("Error actualizando stock en servidor para el producto", itemId, err);
-                }
-              }
+              // Actualizar saldo en el estado local del hook
+              deductBalance(selectedCardId, cartTotal);
+
+              // El stock ya fue reducido en el momento de añadir al carrito
+              // Agregar al historial y limpiar carrito
+              addToHistory(cart);
+              clearCart();
+              setCartOpen(false);
+              setConfirmModal(prev => ({ ...prev, show: false }));
+
+              // Refrescar cuentas para ver el saldo actualizado desde el servidor
+              setTimeout(() => refreshCards(), 800);
+            } catch (err) {
+              console.error('Error al procesar la compra:', err);
+              setConfirmModal({
+                show: true,
+                title: 'Error al procesar',
+                message: 'Hubo un error al procesar el pago. Inténtalo de nuevo.',
+                actions: [
+                  {
+                    label: 'Cerrar',
+                    onClick: () => setConfirmModal(prev => ({ ...prev, show: false })),
+                    className: 'bg-red-600 text-white'
+                  }
+                ]
+              });
             }
-
-            deductBalance(selectedCardId, cartTotal);
-            addToHistory(cart);
-            clearCart();
-            setCartOpen(false);
-            setConfirmModal({ ...confirmModal, show: false });
           },
           className: 'bg-emerald-600 text-white hover:bg-emerald-500'
         }
@@ -216,7 +268,7 @@ export const ProductCatalog = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-blue-500/30">
+    <div className="min-h-screen bg-gray-50 text-slate-800 selection:bg-cyan-800/10">
       {/* Navbar */}
       <StoreNavbar
         cartCount={cart.length}
@@ -233,8 +285,8 @@ export const ProductCatalog = () => {
         {loading && products.length === 0 && (
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-slate-400">Cargando productos...</p>
+              <div className="w-12 h-12 border-4 border-slate-200 border-t-cyan-800 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-slate-500">Cargando productos...</p>
             </div>
           </div>
         )}
@@ -244,7 +296,7 @@ export const ProductCatalog = () => {
           <>
             {paginated.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-slate-400 text-lg">
+                <p className="text-slate-500 text-lg">
                   {searchQuery ? 'No se encontraron productos' : 'No hay productos disponibles'}
                 </p>
               </div>
@@ -284,6 +336,8 @@ export const ProductCatalog = () => {
         onCardChange={setSelectedCardId}
         onRemoveItem={handleRemoveFromCart}
         onCheckout={handleCheckout}
+        loadingCards={loadingCards}
+        onCuentasFound={setCuentas}
       />
 
       {/* Purchase History Panel */}
@@ -304,10 +358,10 @@ export const ProductCatalog = () => {
 
       {/* Confirmation Modal */}
       {confirmModal.show && (
-        <div className="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 max-w-sm w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">{confirmModal.title}</h3>
-            <p className="text-slate-400 mb-6">{confirmModal.message}</p>
+        <div className="fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-350">
+            <h3 className="text-xl font-bold text-slate-800 mb-4">{confirmModal.title}</h3>
+            <p className="text-slate-500 mb-6 text-sm">{confirmModal.message}</p>
             <div className="flex gap-3">
               {confirmModal.actions.map((action, idx) => (
                 <button
