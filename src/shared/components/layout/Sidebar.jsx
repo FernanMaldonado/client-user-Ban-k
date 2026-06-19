@@ -7,7 +7,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const menuItems = [
     { label: "Panel de Administración", to: "/dashboard" },
-    { label: "Tienda", to: "/dashboard/products", icon: ShoppingBag },
+    { label: "Productos", to: "/dashboard/products", icon: ShoppingBag },
   ];
 
   return (

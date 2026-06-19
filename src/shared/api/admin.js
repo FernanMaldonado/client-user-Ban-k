@@ -57,7 +57,7 @@ export const createProduct = async (productData) => {
 // Actualizar un producto (solo admin)
 export const updateProduct = async (id, productData) => {
   try {
-    const response = await axiosAdmin.put(`/api/v1/products/${id}`, productData);
+    const response = await axiosAdmin.put(`/productos/${id}`, productData);
     return response.data;
   } catch (error) {
     console.error("Error updating product:", error);
@@ -72,6 +72,28 @@ export const deleteProduct = async (id) => {
     return response.data;
   } catch (error) {
     console.error("Error deleting product:", error);
+    throw error;
+  }
+};
+
+// Obtener cuentas por ID de usuario
+export const getCuentasByUsuarioId = async (usuarioId) => {
+  try {
+    const response = await axiosAdmin.get(`/cuentas/usuario/${usuarioId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching accounts by user id:", error);
+    throw error;
+  }
+};
+
+// Actualizar una cuenta
+export const updateCuenta = async (id, cuentaData) => {
+  try {
+    const response = await axiosAdmin.put(`/cuentas/${id}`, cuentaData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating account:", error);
     throw error;
   }
 };

@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuthStore } from "../../features/auth/store/authStore.js";
 import { AuthPage } from "../../features/auth/pages/AuthPage.jsx";
 import { DashboardPage } from "../layout/DashboardPage.jsx";
 import { VerifyEmailPage } from "../../features/auth/pages/VerifyEmailPage.jsx";
@@ -24,20 +23,15 @@ const DashboardIndex = () => (
 );
 
 export const AppRoutes = () => {
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     return (
         <Routes>
             {/* Pública */}
-            <Route path="/" element={
-                isAuthenticated ? <Navigate to="/dashboard" replace /> : <AuthPage />
-            } />
+            <Route path="/" element={<AuthPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-            {/* Dashboard */}
-            <Route path="/dashboard" element={
-                isAuthenticated ? <DashboardPage /> : <Navigate to="/" replace />
-            }>
+            {/* Dashboard - Sin protección */}
+            <Route path="/dashboard" element={<DashboardPage />}>
                 <Route index element={<DashboardIndex />} />
                 <Route path="products" element={<ProductCatalog />} />
             </Route>
