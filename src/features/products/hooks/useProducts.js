@@ -28,7 +28,8 @@ export const useProducts = () => {
           nombre: product.name || product.nombre || product.title || 'Sin nombre',
           precio: product.price || product.precio || product.cost || 0,
           stock: product.stock !== undefined ? product.stock : (product.quantity !== undefined ? product.quantity : 0),
-          desc: product.descripcion || product.description || product.desc || product.details || 'Sin descripción'
+          desc: product.descripcion || product.description || product.desc || product.details || 'Sin descripción',
+          isActive: product.isActive !== undefined ? product.isActive : true
         }));
         
         setProducts(transformedProducts);
