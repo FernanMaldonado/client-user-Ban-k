@@ -1,14 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from '../../auth/store/authStore';
+import { getCuentasByUsuarioId } from '../../../shared/api/admin';
 
 export const usePaymentCards = () => {
-  const [cards, setCards] = useState([
-    { id: 1, name: 'Visa Oro', balance: 2500 },
-    { id: 2, name: 'Mastercard Platinum', balance: 5000 },
-    { id: 3, name: 'Débito BancoFin', balance: 1200 }
-  ]);
+  const user = useAuthStore(state => state.user);
 
-  const [selectedCardId, setSelectedCardId] = useState(cards[0]?.id || null);
+  const [cards, setCards] = useState([]);
+  const [selectedCardId, setSelectedCardId] = useState(null);
+  const [loadingCards, setLoadingCards] = useState(true);
 
+  const fetchCuentas = async () => {
+    // El usuario puede tener el id como _id, id o uid
+    const userId = user?._id || user?.id || user?.uid;
+    if (!userId) {
+      setCards([]);
+      setLoadingCards(false);
+      return;
+    }
+
+    try {
+      const data = await getCuentasByUsuarioId(userId);
+      // La respuesta tiene { success, data: { cuentas: [...], usuario: '...' } }
+      const cuentasArray = data?.data?.cuentas || data?.data || data?.cuentas || [];
+
+      const mapped = cuentasArray.map(c => ({
+        id: c._id || c.id,
+        name: `${c.tipoCuenta} - N° ${c.numeroCuenta}`,
+        balance: c.saldo ?? 0,
+        isActive: c.isActive !== undefined ? c.isActive : true,
+        numeroCuenta: c.numeroCuenta,
+      }));
+
+      setCards(mapped);
+      if (mapped.length > 0 && !selectedCardId) {
+        setSelectedCardId(mapped[0].id);
+      }
+    } catch (err) {
+      console.error('Error cargando cuentas del usuario:', err);
+      setCards([]);
+    } finally {
+      setLoadingCards(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCuentas();
+  }, [user?._id, user?.id, user?.uid]);
+
+  // Actualiza el saldo localmente después de una compra exitosa
   const deductBalance = (cardId, amount) => {
     setCards(prev =>
       prev.map(card =>
@@ -19,20 +58,33 @@ export const usePaymentCards = () => {
     );
   };
 
-  const getSelectedCard = () => {
-    return cards.find(c => c.id === selectedCardId);
+  const getSelectedCard = () => cards.find(c => c.id === selectedCardId);
+
+  const getTotalBalance = () => cards.reduce((sum, c) => sum + c.balance, 0);
+
+  const refreshCards = () => {
+    setLoadingCards(true);
+    fetchCuentas();
   };
 
-  const getTotalBalance = () => {
-    return cards.reduce((sum, card) => sum + card.balance, 0);
+  const setCuentas = (nuevasCuentas) => {
+    setCards(nuevasCuentas);
+    if (nuevasCuentas.length > 0) {
+      setSelectedCardId(nuevasCuentas[0].id);
+    } else {
+      setSelectedCardId(null);
+    }
   };
 
   return {
     cards,
     selectedCardId,
     setSelectedCardId,
+    setCuentas,
     deductBalance,
     getSelectedCard,
-    getTotalBalance
+    getTotalBalance,
+    loadingCards,
+    refreshCards,
   };
 };
