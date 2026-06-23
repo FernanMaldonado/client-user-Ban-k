@@ -23,7 +23,6 @@ export const ProductCatalog = () => {
     cards,
     selectedCardId,
     setSelectedCardId,
-    setCuentas,
     deductBalance,
     getSelectedCard,
     loadingCards,
@@ -337,7 +336,6 @@ export const ProductCatalog = () => {
         onRemoveItem={handleRemoveFromCart}
         onCheckout={handleCheckout}
         loadingCards={loadingCards}
-        onCuentasFound={setCuentas}
       />
 
       {/* Purchase History Panel */}
