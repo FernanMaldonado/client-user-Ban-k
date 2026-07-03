@@ -19,6 +19,14 @@ const axiosAdmin = axios.create({
     }
 });
 
+const axiosUser = axios.create({
+    baseURL: `${import.meta.env.VITE_USER_URL}`,
+    timeout: 80000,
+    headers: {
+        "Content-Type": "application/json",
+    }
+});
+
 // Configuración de interceptores
 axiosAuth.interceptors.request.use((config) => {
     config._axiosClient = "auth";
@@ -31,6 +39,15 @@ axiosAuth.interceptors.request.use((config) => {
 
 axiosAdmin.interceptors.request.use((config) => {
     config._axiosClient = "admin";
+    const token = useAuthStore.getState().token;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+axiosUser.interceptors.request.use((config) => {
+    config._axiosClient = "user";
     const token = useAuthStore.getState().token;
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -71,8 +88,9 @@ const handleRefreshToken = async function (_error) {
     const shouldRefresh = shouldAttemptRefresh || shouldAttemptRefreshFrom403;
 
     if (shouldRefresh) {
-        const retryClient =
-            _original._axiosClient === "admin" ? axiosAdmin : axiosAuth;
+        let retryClient = axiosAuth;
+        if (_original._axiosClient === "admin") retryClient = axiosAdmin;
+        if (_original._axiosClient === "user") retryClient = axiosUser;
         if (_isRefreshing) {
             // Si ya hay un refresh en curso, encola la petición
             return new Promise(function (resolve, reject) {
@@ -124,6 +142,8 @@ axiosAuth.interceptors.response.use((res) => res, handleRefreshToken);
 
 axiosAdmin.interceptors.response.use((res) => res, handleRefreshToken);
 
+axiosUser.interceptors.response.use((res) => res, handleRefreshToken);
+
 // ================= EXPORT AXIOS =================
-export { axiosAuth, axiosAdmin };
+export { axiosAuth, axiosAdmin, axiosUser };
 export { handleRefreshToken };
