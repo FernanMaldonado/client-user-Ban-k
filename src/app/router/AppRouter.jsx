@@ -3,6 +3,9 @@ import { useAuthStore } from "../../features/auth/store/authStore.js";
 import { AuthPage } from "../../features/auth/pages/AuthPage.jsx";
 import { DashboardPage } from "../layout/DashboardPage.jsx";
 import { VerifyEmailPage } from "../../features/auth/pages/VerifyEmailPage.jsx";
+import { TransferenciasPage } from "../../features/transferencia/pages/TransferenciasPage.jsx";
+import { RetirosPage } from "../../features/retiro/pages/RetirosPage.jsx";
+import { DepositosPage } from "../../features/deposito/pages/DepositosPage.jsx";
 
 const DashboardIndex = () => (
     <div className="flex flex-col items-center justify-center h-full animate-in fade-in zoom-in duration-700">
@@ -14,7 +17,7 @@ const DashboardIndex = () => (
             />
         </div>
         <h1 className="text-5xl font-black text-slate-800 tracking-tighter mb-4">
-            Bienvenido a <span className="text-cyan-900"> BAN-K</span>
+            Bienvenido a <span className="text-cyan-900"> BAN-K </span>
         </h1>
         <p className="text-slate-500 font-medium text-lg max-w-md text-center">
             Selecciona un activo en el menú lateral para gestionar la red.
@@ -37,6 +40,10 @@ export const AppRoutes = () => {
             <Route path="/dashboard" element={
                 isAuthenticated ? <DashboardPage /> : <Navigate to="/" replace />
             }>
+                <Route index element={<DashboardIndex />} />
+                <Route path="transferencias" element={<TransferenciasPage />} />
+                <Route path="retiros" element={<RetirosPage />} />
+                <Route path="depositos" element={<DepositosPage />} />
             </Route>
         </Routes>
     );
