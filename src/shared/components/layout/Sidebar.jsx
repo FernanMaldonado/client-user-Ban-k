@@ -6,7 +6,9 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
 
   const menuItems = [
-    { label: "Panel de Administración"},
+    { label: "Transferencias", to: "/dashboard/transferencias" },
+    { label: "Depósitos", to: "/dashboard/depositos" },
+    { label: "Retiros", to: "/dashboard/retiros" }
   ];
 
   return (
