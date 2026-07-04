@@ -7,6 +7,8 @@ import { TransferenciasPage } from "../../features/transferencia/pages/Transfere
 import { RetirosPage } from "../../features/retiro/pages/RetirosPage.jsx";
 import { DepositosPage } from "../../features/deposito/pages/DepositosPage.jsx";
 
+import { Cuentas } from "../../features/cuentas/components/Cuentas.jsx";
+import { Prestamos } from "../../features/prestamos/components/Prestamos.jsx";
 const DashboardIndex = () => (
     <div className="flex flex-col items-center justify-center h-full animate-in fade-in zoom-in duration-700">
         <div className="relative">
@@ -44,7 +46,9 @@ export const AppRoutes = () => {
                 <Route path="transferencias" element={<TransferenciasPage />} />
                 <Route path="retiros" element={<RetirosPage />} />
                 <Route path="depositos" element={<DepositosPage />} />
-            </Route>
-        </Routes>
+                <Route path="cuentas" element={<Cuentas />} />
+                <Route path="prestamos" element={<Prestamos />} />
+            </Route >
+        </Routes >
     );
 };

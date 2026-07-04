@@ -8,7 +8,9 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
   const menuItems = [
     { label: "Transferencias", to: "/dashboard/transferencias" },
     { label: "Depósitos", to: "/dashboard/depositos" },
-    { label: "Retiros", to: "/dashboard/retiros" }
+    { label: "Retiros", to: "/dashboard/retiros" },
+    { label: "Mis Cuentas", to: "/dashboard/cuentas" },
+    { label: "Préstamos", to: "/dashboard/prestamos" },
   ];
 
   return (
