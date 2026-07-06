@@ -1,16 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-import { X } from "lucide-react";
+import { X, ShoppingBag } from "lucide-react";
 import { AvatarUser } from "../ui/AvatarUser.jsx";
 
 export const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
 
   const menuItems = [
-    { label: "Transferencias", to: "/dashboard/transferencias" },
-    { label: "Depósitos", to: "/dashboard/depositos" },
-    { label: "Retiros", to: "/dashboard/retiros" },
+    { label: "Transferir", to: "/dashboard/transferencias" },
+    { label: "Depositar", to: "/dashboard/depositos" },
+    { label: "Retirar", to: "/dashboard/retiros" },
     { label: "Mis Cuentas", to: "/dashboard/cuentas" },
-    { label: "Préstamos", to: "/dashboard/prestamos" },
+    { label: "Solicitar Préstamo", to: "/dashboard/prestamos" },
+    { label: "Comprar Productos", to: "/dashboard/products" },
+    { label: "Divisas", to: "/dashboard/divisas" },
   ];
 
   return (
@@ -49,14 +51,16 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const active = location.pathname === item.to;
+              const Icon = item.icon;
               return (
                 <li key={item.label}>
                   <Link
                     to={item.to}
                     onClick={() => setIsOpen(false)}
-                    className={`block px-4 py-2 rounded-lg font-medium transition-colors ${active ? "bg-cyan-50 text-cyan-800 font-bold" : "text-gray-700 hover:bg-gray-100"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${active ? "bg-cyan-50 text-cyan-800 font-bold" : "text-gray-700 hover:bg-gray-100"
                       }`}
                   >
+                    {Icon && <Icon size={18} />}
                     {item.label}
                   </Link>
                 </li>
