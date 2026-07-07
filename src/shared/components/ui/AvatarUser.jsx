@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../../../features/auth/store/authStore.js";
 import { LayoutDashboard, Users, LogOut, ChevronDown } from 'lucide-react';
+import { Cuentas } from '../../../features/cuentas/components/Cuentas.jsx';
+import { DashboardContainers } from '../layout/DashboardContainer.jsx';
 
 export const AvatarUser = () => {
     const { user, logout } = useAuthStore();
@@ -83,6 +85,26 @@ export const AvatarUser = () => {
 
                     {/* Lista de Links */}
                     <ul className="p-2 space-y-1">
+                        <li>
+                            <Link
+                                to="/dashboard/cuentas"
+                                onClick={() => setOpen(false)}
+                                className="flex items-center gap-3 w-full p-3 rounded-2xl text-slate-300 hover:bg-cyan-600 hover:text-white transition-all duration-200 group"
+                            >
+                                <LayoutDashboard size={16} className="group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-bold">Cuentas</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                to="/dashboard"
+                                onClick={() => setOpen(false)}
+                                className="flex items-center gap-3 w-full p-3 rounded-2xl text-slate-300 hover:bg-cyan-600 hover:text-white transition-all duration-200 group"
+                            >
+                                <LayoutDashboard size={16} className="group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-bold">Divisas</span>
+                            </Link>
+                        </li>
                         <li>
                             <button
                                 onClick={handleLogout}
